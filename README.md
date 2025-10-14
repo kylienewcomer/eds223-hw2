@@ -1,1 +1,1 @@
-# eds223-hw2
+# EDS 223 Homework 2

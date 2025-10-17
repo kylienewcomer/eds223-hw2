@@ -1,0 +1,151 @@
+---
+title: "hw2"
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Background
+
+Present-day environmental justice may reflect legacies of injustice in
+the past. The United States has a long history of racial segregation
+which is still visible. During the 1930’s the Home Owners’ Loan
+Corporation (HOLC), as part of the New Deal, rated neighborhoods based
+on their perceived safety for real estate investment. Their ranking
+system, (A (green), B (blue), C (yellow), D (red)) was then used to
+block access to loans for home ownership. Colloquially known as
+“redlining”, this practice has had widely-documented consequences not
+only for community wealth, but also health.1 Redlined neighborhoods have
+less greenery2 and are hotter than other neighborhoods.3
+
+Check out coverage by the New York Times.
+
+A recent study found that redlining has not only affected the
+environments communities are exposed to, it has also shaped our
+observations of biodiversity.4 Community or citizen science, whereby
+individuals share observations of species, is generating an enormous
+volume of data. Ellis-Soto and co-authors found that redlined
+neighborhoods remain the most undersampled areas across 195 US cities.
+This gap is highly concerning, because conservation decisions are made
+based on these data.
+
+```{r}
+library(tidyverse)
+library(here)
+library(sf) 
+library(tmap)
+library(spData)
+```
+
+```{r}
+ejscreen <- st_read(here("data", "ejscreen",
+                        "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) 
+birds <- st_read(here("data", "gbif-birds-LA", "gbif-birds-LA.shp"))
+holc <- st_read(here("data", "mapping-inequality", "mapping-inequality-los-angeles.json"))
+```
+
+# Part 1: Legacy of redlining in current environmental (in)justice
+
+## Description
+
+1.  For this assignment, you must complete the following:
+
+Create a map of historical redlining neighborhoods, including:
+neighborhoods colored by HOLC grade an appropriate base map a clear
+title and legend
+
+```{r}
+world <- spData::world
+la <- ejscreen %>% 
+  filter(CNTY_NAME == 'Los Angeles County')
+
+states <- spData::us_states
+```
+
+```{r}
+# Checking to see if they have the same CRS
+st_crs(la) == st_crs(holc)
+```
+```{r}
+# False- Need to set them equal
+la_transform <- st_transform(la, crs = st_crs(holc))
+
+st_crs(la_transform) == st_crs(holc)
+```
+
+```{r}
+tm_shape(la_transform, 
+         bbox= c(-118.65, 33.7, -117.7, 34.3)) +
+  tm_polygons() +
+  tm_graticules() +
+tm_shape(holc) +
+  tm_polygons(fill = 'grade',
+              fill.scale = tm_scale(values = c("forestgreen", 
+                                               "navy",
+                                               "gold1",
+                                               "red4"))) 
+  #tm_shape() +
+  #tm_polygons()
+```
+```{r}
+
+```
+
+
+## Creating a summary table
+```{r}
+holc_la <- st_join(x = la_transform, y = holc,
+                   join = st_overlaps) %>%
+  st_drop_geometry()
+```
+
+
+2.  Create a table summarizing: the percentage of census block groups
+that fall within each HOLC grade Also include the percent of census
+    block groups that don’t fall within a HOLC grade Hint: The HOLC data
+    contains the grades and the EJScreen data contains the census
+    blocks, so you will need to combine the data spatially before doing
+    summary statistics. Once you combine and no longer need the
+    geometries, you can use st_drop_geometry()
+
+```{r}
+holc_la_summary <- holc_la %>% 
+  group_by(grade) %>% 
+  summarise(pop_sum = sum(ACSTOTPOP)) %>% 
+  ungroup() %>% 
+  filter(grade == NA)
+```
+
+
+```{r}
+holc_la$grade
+```
+
+
+3.  Create at least two visualizations summarizing current conditions
+    (from the EJScreen data) within HOLC grades using the mean of the
+    following variables (you may combine variables or create separate
+    plots): % low income percentile for Particulate Matter 2.5
+    percentile for low life expectancy Use ggplot for your
+    visualizations! You will first need to calculate mean of each
+    variable grouped by HOLC grade.
+
+4.  Write a brief paragraph reflecting on these results Interpret the
+    patterns you observe in your results Discuss potential relationships
+    between historical redlining grades and current
+    environmental/socioeconomic conditions
+
+# Part 2: Legacy of redlining in biodiversity observations
+
+## Description
+For this assignment, you must produce the following based on observations from 2021-2023:
+
+A figure summarizing the percent of observations within redlined neighborhoods within each HOLC grade
+
+Create a visualizations that shows:
+
+The percentage of bird observations within each HOLC grade
+Include an appropiate title, axis labels, and legend
+Hints: Ensure the bird observations and HOLC dataset have matching CRS’, then perform a spatial join to assign each bird observations to a corresponding HOLC grade.
+Spolier alert!! Our results don’t match the findings from Ellis-Soto et al. 2023! Read the abstract of the study. Why might we have obtained different results in our analysis? What did the paper consider that we did not?

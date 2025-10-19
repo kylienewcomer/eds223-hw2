@@ -26,9 +26,9 @@ years of interested. The bird and redlining data was combined to to include only
 
 ## References
 
-Cartier, K. M. S. (2023), Bird biodiversity reports reflect cities’ redlined past, Eos, 104, https://doi.org/10.1029/2023EO230375. Published on 5 October 2023. Date Accessed: Oct 18, 2025 <https://eos.org/articles/bird-biodiversity-reports-reflect-cities-redlined-past?utm_source=EosBuzz&mkt_tok=OTg3LUlHVC01NzIAAAGOx3ckQPpeDY3QyFKdUnBSYqILj3qLrgb_Q2lasphwcF90xEzMgjZFUo3NHsw3caXDcZe6I8D8qdVsSRr3wzhb6LKAQRgNo8ffhjieEbDwMw>
+Cartier, K. M. S. (2023), Bird biodiversity reports reflect cities’ redlined past, Eos, 104, https://doi.org/10.1029/2023EO230375. Published on 5 October 2023. Date Accessed: Oct 18, 2025 
 
 Nelson, Robert K., LaDale Winling, et al. “Mapping Inequality: Redlining in New Deal America.” Edited by Robert K. Nelson, American Panorama: An Atlas of United States History, 2023. Date Accessed: Oct 18, 2025
-<dsl.richmond.edu/panorama/redlining>
+dsl.richmond.edu/panorama/redlining
 
 United States Environmental Protection Agency. 2015. EJSCREEN. Date Accessed: Oct 6, 2025 <https://19january2017snapshot.epa.gov/ejscreen/frequent-questions-about-ejscreen_.html>

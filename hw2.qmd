@@ -137,8 +137,10 @@ holc_la_summary <- holc_la %>%
   ungroup()
 
 holc_la_summary %>% 
-  kable(col.names = c("Neighborhood Grade", "Population %")) %>% 
-  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+  kable(col.names = c("Neighborhood Grade", "Population %"), 
+        caption= "Percent of population by Neighborhood Grade") %>% 
+  kable_styling(bootstrap_options = "striped", 
+                full_width = FALSE)
 ```
 
 
@@ -154,7 +156,7 @@ holc_la_summary %>%
 holc_la_mean <- holc_la %>% 
   group_by(grade) %>% 
   summarise(mean_pct_inc = mean(LOWINCPCT, # Low income percent
-                                na.rm = TRUE),
+                                na.rm = TRUE)*100, # multiply by 100 for percent
             mean_pm25 = mean(P_PM25, # Percentile pm
                              na.rm = TRUE),
             mean_lifeexp = mean(P_LIFEEXPPCT, # Percentile low life exp

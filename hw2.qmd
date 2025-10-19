@@ -1,9 +1,14 @@
 ---
-title: "hw2"
+title: "Investigating Environmental and Socioeconomic Impacts of Redlining in Los Angeles"
+author: "Kylie Newcomer"
+date: 10/18/2025
 format: html
 editor: 
   markdown: 
     wrap: 72
+execute: 
+  warning: false
+  message: false
 ---
 
 # Background
@@ -36,13 +41,18 @@ library(here)
 library(sf) 
 library(tmap)
 library(spData)
+library(kableExtra)
 ```
 
 ```{r}
+# Loading in data with specified CRS to make my life easier later
 ejscreen <- st_read(here("data", "ejscreen",
-                        "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) 
-birds <- st_read(here("data", "gbif-birds-LA", "gbif-birds-LA.shp"))
-holc <- st_read(here("data", "mapping-inequality", "mapping-inequality-los-angeles.json"))
+                        "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) %>% 
+  st_transform(crs = st_crs(4326))
+birds <- st_read(here("data", "gbif-birds-LA", "gbif-birds-LA.shp")) %>% 
+  st_transform(crs = st_crs(4326))
+holc <- st_read(here("data", "mapping-inequality", "mapping-inequality-los-angeles.json")) %>% 
+  st_transform(crs = st_crs(4326))
 ```
 
 # Part 1: Legacy of redlining in current environmental (in)justice
@@ -56,50 +66,41 @@ neighborhoods colored by HOLC grade an appropriate base map a clear
 title and legend
 
 ```{r}
-world <- spData::world
 la <- ejscreen %>% 
-  filter(CNTY_NAME == 'Los Angeles County')
+  filter(CNTY_NAME == 'Los Angeles County') # Filter to LA only
 
-states <- spData::us_states
 ```
 
 ```{r}
 # Checking to see if they have the same CRS
-st_crs(la) == st_crs(holc)
-```
-```{r}
-# False- Need to set them equal
-la_transform <- st_transform(la, crs = st_crs(holc))
-
-st_crs(la_transform) == st_crs(holc)
+if (st_crs(la) == st_crs(holc)){
+  print("All Good! They have the same CRS :)")
+} else {
+    warning("Uh oh! They have different CRS's, better fix that :/")}
 ```
 
+
 ```{r}
-tm_shape(la_transform, 
-         bbox= c(-118.65, 33.7, -117.7, 34.3)) +
+
+```
+
+```{r}
+tm_shape(la, 
+         bbox= c(-119, 33.65, -117.7, 34.4)) + # adjusting window for visual aesthetics
   tm_polygons() +
   tm_graticules() +
 tm_shape(holc) +
-  tm_polygons(fill = 'grade',
+  tm_polygons(fill = 'grade', # Use HOLC colors
               fill.scale = tm_scale(values = c("forestgreen", 
                                                "navy",
-                                               "gold1",
-                                               "red4"))) 
-  #tm_shape() +
-  #tm_polygons()
-```
-```{r}
+                                               "gold1", # These shades look like
+                                               "red4"))) + # crayola crayons :)
+  tm_title("HOLC Graded Neighborhoods Across Los Angeles")
 
 ```
 
 
 ## Creating a summary table
-```{r}
-holc_la <- st_join(x = la_transform, y = holc,
-                   join = st_overlaps) %>%
-  st_drop_geometry()
-```
-
 
 2.  Create a table summarizing: the percentage of census block groups
 that fall within each HOLC grade Also include the percent of census
@@ -108,19 +109,38 @@ that fall within each HOLC grade Also include the percent of census
     blocks, so you will need to combine the data spatially before doing
     summary statistics. Once you combine and no longer need the
     geometries, you can use st_drop_geometry()
+    
+I attempted to join my data, but there was an error. I need to check that my data is valid.
+```{r, results="hide"}
+# Don't want this in my output, way too big... just trust what I say the results are
+st_is_valid(la) # All good there
+st_is_valid(holc) # Looks like there are invalid geometries
+```
 
 ```{r}
+# making my holc data valid
+holc <- st_make_valid(holc)
+```
+
+```{r}
+holc_la <- st_join(x = holc, y = la) %>%
+  st_drop_geometry() # Don't need geometry for summaries
+```
+
+```{r}
+
+total_grade <- length(holc_la$grade)  # Creating object to find percent of population
+
 holc_la_summary <- holc_la %>% 
-  group_by(grade) %>% 
-  summarise(pop_sum = sum(ACSTOTPOP)) %>% 
-  ungroup() %>% 
-  filter(grade == NA)
+  group_by(grade) %>% # Want to look by neighborhood grade
+  summarise(pct_pop = (n()/total_grade)*100) %>% # Percent of population calculation]
+  ungroup()
+
+holc_la_summary %>% 
+  kable(col.names = c("Neighborhood Grade", "Population %")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
 ```
 
-
-```{r}
-holc_la$grade
-```
 
 
 3.  Create at least two visualizations summarizing current conditions
@@ -130,11 +150,56 @@ holc_la$grade
     percentile for low life expectancy Use ggplot for your
     visualizations! You will first need to calculate mean of each
     variable grouped by HOLC grade.
+```{r}
+holc_la_mean <- holc_la %>% 
+  group_by(grade) %>% 
+  summarise(mean_pct_inc = mean(LOWINCPCT, # Low income percent
+                                na.rm = TRUE),
+            mean_pm25 = mean(P_PM25, # Percentile pm
+                             na.rm = TRUE),
+            mean_lifeexp = mean(P_LIFEEXPPCT, # Percentile low life exp
+                                na.rm = TRUE))
+
+holc_la_mean  %>% # Let's look at these values
+  kable(col.names = c("Neighborhood Grade", "Mean % Low Income", "Mean Percentile Particulate Matter 2.5", "Mean Percentile Low Life Expectancy")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+
+```{r}
+figure_1 <- ggplot(holc_la_mean, aes(grade, mean_pct_inc)) +
+  geom_col(aes(fill = grade), show.legend = FALSE) + # Legend is redundent
+  scale_fill_manual(values = c("forestgreen", # HOLC colors
+                               "navy", 
+                               "gold1", 
+                               "red4")) +
+  labs(y = "Low Income Households (%)",
+       x = "Neighborhood grade",
+       title = "Average Percent of Low Income Households") +
+  theme_light()
+
+figure_1
+```
+
+```{r}
+figure_2 <- ggplot(holc_la_mean, aes(grade, mean_lifeexp, fill = mean_pm25)) +
+  geom_col() +
+  scale_fill_viridis_c(option = "magma", direction = -1) + 
+  labs(x = "Grade",
+       y = "Percentile low life expectancy",
+       fill = "Percentile \nparticulate matter 2.5",
+       title = "Average percentile particulate matter 2.5 and \nlow life expectancy by neighborhood grade") +
+  theme_light()
+# Sorry for making two bar graphs...
+figure_2
+```
 
 4.  Write a brief paragraph reflecting on these results Interpret the
     patterns you observe in your results Discuss potential relationships
     between historical redlining grades and current
     environmental/socioeconomic conditions
+    
+As seen in Figure 1, the mean of percent low income households increases as the neighborhood grade decreases. Additionally, figure 2 shows both the percentile of particulate matter 2.5 and percentile of low life expectancy are both higher in lower grade neighborhoods. These figures demonstrate the long lasting negative health and environmental impacts made on areas that were victim to redlining. These impacts are also reflected in the socioeconomic conditions with lower income neighborhoods being in the lower graded neighborhoods.
 
 # Part 2: Legacy of redlining in biodiversity observations
 
@@ -146,6 +211,55 @@ A figure summarizing the percent of observations within redlined neighborhoods w
 Create a visualizations that shows:
 
 The percentage of bird observations within each HOLC grade
-Include an appropiate title, axis labels, and legend
+Include an appropriate title, axis labels, and legend
 Hints: Ensure the bird observations and HOLC dataset have matching CRS’, then perform a spatial join to assign each bird observations to a corresponding HOLC grade.
+
+```{r}
+# Start by double checking CRS
+# Checking CRS before joining
+if (st_crs(holc) == st_crs(birds)){
+  print("All Good! They have the same CRS :)")
+} else {
+    warning("UH OH! They have different CRS, better fix that :(")}
+
+```
+
+
+```{r}
+birds_21_23 <- birds %>% 
+  filter(year >= 2021 & year <= 2023) # Subset to only observations from 2021-2023
+
+birds_holc_join <- st_join(birds_21_23, holc) %>%
+  drop_na(grade) %>% # Removing observations not in a graded neighborhood
+  st_drop_geometry()
+```
+
+```{r}
+total_birds <- length(birds_holc_join$year) # Make my total bird observations value
+
+birds_holc_summary <- birds_holc_join %>% 
+  group_by(grade) %>% 
+  summarize(obs_sum = n(), # Looking at total observations by grade for funsies
+            pct_obs = (n()/total_birds)*100) %>% # Finding the percent of observations
+  ungroup()
+  
+  
+```
+
+```{r}
+ggplot(birds_holc_summary, aes(grade, pct_obs)) +
+  geom_col(aes(fill = grade), show.legend = FALSE) + # Again, legend feels redundent
+  scale_fill_manual(values = c("forestgreen", 
+                               "navy", 
+                               "gold1", 
+                               "red4")) + # Using my crayola crayon colors
+  labs(x = "Neighborhood grade",
+       y = "Percent of observations",
+       title = "Bird observations across neighborhoods") +
+  theme_light()
+# and get ready for ANOTHER bar graph... Sorry
+```
+
 Spolier alert!! Our results don’t match the findings from Ellis-Soto et al. 2023! Read the abstract of the study. Why might we have obtained different results in our analysis? What did the paper consider that we did not?
+
+These results demonstrated C-Grade neighborhoods actually had the highest percent of observations of birds, which was different than the findings of Ellis-Soto et al. 2023. A and D graded neighborhoods had similar percentages of bird observations and B neighborhoods had the lowest percentage. Ellis-Soto et al. 2023 found that redlining resulted in less bird observations in lower graded neighborhoods. They accounted for changes in green spaces and population and climate over time, which is most likely why this project's results differ.

@@ -2,7 +2,7 @@
 title: "Investigating Environmental and Socioeconomic Impacts of Redlining in Los Angeles"
 author: "Kylie Newcomer"
 date: 10/18/2025
-format: html
+format: pdf
 editor: 
   markdown: 
     wrap: 72
@@ -35,7 +35,7 @@ neighborhoods remain the most undersampled areas across 195 US cities.
 This gap is highly concerning, because conservation decisions are made
 based on these data.
 
-```{r}
+```{r, output=FALSE}
 library(tidyverse)
 library(here)
 library(sf) 
@@ -44,7 +44,7 @@ library(spData)
 library(kableExtra)
 ```
 
-```{r}
+```{r, output = FALSE}
 # Loading in data with specified CRS to make my life easier later
 ejscreen <- st_read(here("data", "ejscreen",
                         "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) %>% 
@@ -79,10 +79,6 @@ if (st_crs(la) == st_crs(holc)){
     warning("Uh oh! They have different CRS's, better fix that :/")}
 ```
 
-
-```{r}
-
-```
 
 ```{r}
 tm_shape(la, 
@@ -143,8 +139,6 @@ holc_la_summary %>%
                 full_width = FALSE)
 ```
 
-
-
 3.  Create at least two visualizations summarizing current conditions
     (from the EJScreen data) within HOLC grades using the mean of the
     following variables (you may combine variables or create separate
@@ -170,14 +164,15 @@ holc_la_mean  %>% # Let's look at these values
 
 ```{r}
 figure_1 <- ggplot(holc_la_mean, aes(grade, mean_pct_inc)) +
-  geom_col(aes(fill = grade), show.legend = FALSE) + # Legend is redundent
+  geom_col(aes(fill = grade)) + # Legend is redundent
   scale_fill_manual(values = c("forestgreen", # HOLC colors
                                "navy", 
                                "gold1", 
                                "red4")) +
   labs(y = "Low Income Households (%)",
        x = "Neighborhood grade",
-       title = "Average Percent of Low Income Households") +
+       title = "Average Percent of Low Income Households",
+       fill = "HOLC Grade") +
   theme_light()
 
 figure_1
@@ -250,14 +245,15 @@ birds_holc_summary <- birds_holc_join %>%
 
 ```{r}
 ggplot(birds_holc_summary, aes(grade, pct_obs)) +
-  geom_col(aes(fill = grade), show.legend = FALSE) + # Again, legend feels redundent
+  geom_col(aes(fill = grade)) + # Again, legend feels redundent
   scale_fill_manual(values = c("forestgreen", 
                                "navy", 
                                "gold1", 
                                "red4")) + # Using my crayola crayon colors
   labs(x = "Neighborhood grade",
        y = "Percent of observations",
-       title = "Bird observations across neighborhoods") +
+       title = "Bird observations across neighborhoods",
+       fill = "HOLC Grade") +
   theme_light()
 # and get ready for ANOTHER bar graph... Sorry
 ```
